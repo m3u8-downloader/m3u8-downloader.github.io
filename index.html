@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线M3U8下载器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1d1d1f;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 32px;
+            letter-spacing: -0.5px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1d1d1f;
+            font-size: 16px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
+            font-size: 17px;
+            background-color: #f5f5f7;
+            transition: all 0.2s ease;
+        }
+
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #0071e3;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px #0071e326;
+        }
+
+        button {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0077ed;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #d2d2d7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .controls button {
+            flex: 1;
+        }
+
+        #downloadBtn {
+            background-color: #34c759;
+        }
+
+        #downloadBtn:hover {
+            background-color: #30d158;
+        }
+
+        #cancelBtn {
+            background-color: #ff3b30;
+        }
+
+        #cancelBtn:hover {
+            background-color: #ff453a;
+        }
+
+        .progress-container {
+            margin: 30px 0;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: #d2d2d7;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #0071e3;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 15px;
+            color: #86868b;
+            font-weight: 500;
+        }
+
+        .segments-container {
+            margin-top: 40px;
+        }
+
+        h2 {
+            font-weight: 600;
+            font-size: 22px;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+        }
+
+        .segment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .segment {
+            position: relative;
+            background-color: #f5f5f7;
+            border-radius: 10px;
+            padding: 15px 5px;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .segment:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .segment.pending {
+            background-color: #f5f5f7;
+        }
+
+        .segment.downloading {
+            background-color: #0071e3;
+            color: white;
+            border-color: #0071e3;
+        }
+
+        .segment.completed {
+            background-color: #34c759;
+            color: white;
+            border-color: #34c759;
+        }
+
+        .segment.failed {
+            background-color: #ff3b30;
+            color: white;
+            border-color: #ff3b30;
+        }
+
+        .segment.retry {
+            background-color: #ff9500;
+            color: white;
+            border-color: #ff9500;
+        }
+
+        .segment-index {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .segment-status {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .status-item {
+            background-color: #f5f5f7;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .log-container {
+            margin-top: 40px;
+            background-color: #1d1d1f;
+            color: #f5f5f7;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .log-container h3 {
+            color: #f5f5f7;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            font-family: 'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+            font-size: 14px;
+        }
+
+        .log-entry.error {
+            color: #ff453a;
+        }
+
+        .log-entry.success {
+            color: #30d158;
+        }
+
+        .log-entry.warning {
+            color: #ff9500;
+        }
+
+        .log-entry.info {
+            color: #0a84ff;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .download-complete {
+            text-align: center;
+            padding: 30px;
+            background-color: #f5f5f7;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .download-complete h2 {
+            color: #34c759;
+            margin-bottom: 20px;
+        }
+
+        .download-complete p {
+            margin-bottom: 25px;
+            font-size: 17px;
+            color: #1d1d1f;
+        }
+
+        .save-btn {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            padding: 16px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .save-btn:hover {
+            background-color: #0077ed;
+            transform: scale(1.02);
+        }
+
+        .note {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fffacd;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #8b8000;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .segment-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>在线M3U8下载器</h1>
+
+        <div class="input-group">
+            <label for="m3u8Url">M3U8文件URL:</label>
+            <input type="url" id="m3u8Url" placeholder="请输入M3U8文件的完整URL地址">
+        </div>
+
+        <div class="controls">
+            <button id="parseBtn">解析M3U8</button>
+            <button id="downloadBtn" disabled>开始下载</button>
+            <button id="cancelBtn" class="hidden">取消下载</button>
+        </div>
+
+        <div class="progress-container hidden" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+
+        <div class="status-info hidden" id="statusInfo">
+            <div class="status-item">总分片: <span id="totalSegments">0</span></div>
+            <div class="status-item">已完成: <span id="completedSegments">0</span></div>
+            <div class="status-item">失败: <span id="failedSegments">0</span></div>
+            <div class="status-item">速度: <span id="downloadSpeed">0 KB/s</span></div>
+        </div>
+
+        <div class="segments-container hidden" id="segmentsContainer">
+            <h2>分片状态</h2>
+            <div class="segment-grid" id="segmentGrid"></div>
+        </div>
+
+        <div class="download-complete hidden" id="downloadComplete">
+            <h2>下载完成!</h2>
+            <p>所有分片已成功下载，点击下方按钮将它们合并并保存到本地。</p>
+            <button class="save-btn" id="saveBtn">保存为MP4文件</button>
+            <div class="note">
+                <p><strong>注意:</strong> 由于浏览器限制，当前保存的是TS格式文件，但扩展名已改为.mp4。如需真正的MP4文件，请使用专业视频转换工具进行格式转换。</p>
+            </div>
+        </div>
+
+        <div class="log-container hidden" id="logContainer">
+            <h3>日志:</h3>
+            <div id="logEntries"></div>
+        </div>
+    </div>
+
+    <script>
+        class M3U8Downloader {
+            constructor() {
+                this.m3u8Url = '';
+                this.segments = [];
+                this.downloadedSegments = [];
+                this.failedSegments = [];
+                this.isDownloading = false;
+                this.abortController = null;
+                this.startTime = null;
+                this.completedCount = 0;
+
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.m3u8UrlInput = document.getElementById('m3u8Url');
+                this.parseBtn = document.getElementById('parseBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.cancelBtn = document.getElementById('cancelBtn');
+                this.progressContainer = document.getElementById('progressContainer');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressText = document.getElementById('progressText');
+                this.segmentsContainer = document.getElementById('segmentsContainer');
+                this.segmentGrid = document.getElementById('segmentGrid');
+                this.logContainer = document.getElementById('logContainer');
+                this.logEntries = document.getElementById('logEntries');
+                this.statusInfo = document.getElementById('statusInfo');
+                this.totalSegmentsEl = document.getElementById('totalSegments');
+                this.completedSegmentsEl = document.getElementById('completedSegments');
+                this.failedSegmentsEl = document.getElementById('failedSegments');
+                this.downloadSpeedEl = document.getElementById('downloadSpeed');
+                this.downloadComplete = document.getElementById('downloadComplete');
+                this.saveBtn = document.getElementById('saveBtn');
+            }
+
+            bindEvents() {
+                this.parseBtn.addEventListener('click', () => this.parseM3U8());
+                this.downloadBtn.addEventListener('click', () => this.startDownload());
+                this.cancelBtn.addEventListener('click', () => this.cancelDownload());
+                this.saveBtn.addEventListener('click', () => this.saveToFile());
+            }
+
+            log(message, type = '') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                this.logEntries.appendChild(logEntry);
+                this.logEntries.scrollTop = this.logEntries.scrollHeight;
+                this.logContainer.classList.remove('hidden');
+            }
+
+            updateProgress() {
+                const total = this.segments.length;
+                const completed = this.completedCount;
+                const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                this.progressFill.style.width = `${percentage}%`;
+                this.progressText.textContent = `${percentage}%`;
+                this.completedSegmentsEl.textContent = completed;
+                this.failedSegmentsEl.textContent = this.failedSegments.length;
+
+                // 计算下载速度
+                if (this.startTime && completed > 0) {
+                    const elapsed = (Date.now() - this.startTime) / 1000; // 秒
+                    const speed = (completed * 100) / elapsed; // 假设每个分片约100KB
+                    this.downloadSpeedEl.textContent = `${Math.round(speed)} KB/s`;
+                }
+            }
+
+            updateSegmentUI(index, status) {
+                const segmentElement = document.getElementById(`segment-${index}`);
+                if (segmentElement) {
+                    // 移除所有状态类
+                    segmentElement.classList.remove('pending', 'downloading', 'completed', 'failed', 'retry');
+                    // 添加新状态类
+                    segmentElement.classList.add(status);
+
+                    const statusEl = segmentElement.querySelector('.segment-status');
+                    if (statusEl) {
+                        let statusText = '';
+                        switch (status) {
+                            case 'pending': statusText = '待下载'; break;
+                            case 'downloading': statusText = '下载中'; break;
+                            case 'completed': statusText = '已完成'; break;
+                            case 'failed': statusText = '失败'; break;
+                            case 'retry': statusText = '重试中'; break;
+                        }
+                        statusEl.textContent = statusText;
+                    }
+                }
+            }
+
+            async parseM3U8() {
+                this.m3u8Url = this.m3u8UrlInput.value.trim();
+
+                if (!this.m3u8Url) {
+                    alert('请输入M3U8文件的URL');
+                    return;
+                }
+
+                try {
+                    this.log('开始解析M3U8文件...', 'info');
+                    this.parseBtn.disabled = true;
+                    this.parseBtn.textContent = '解析中...';
+
+                    const response = await fetch(this.m3u8Url);
+                    const content = await response.text();
+
+                    // 解析M3U8内容
+                    this.segments = this.parseM3U8Content(content, this.m3u8Url);
+
+                    if (this.segments.length === 0) {
+                        this.log('未找到有效的分片', 'error');
+                        return;
+                    }
+
+                    this.log(`解析完成，共找到 ${this.segments.length} 个分片`, 'success');
+                    this.downloadBtn.disabled = false;
+                    this.renderSegments();
+                    this.statusInfo.classList.remove('hidden');
+                    this.totalSegmentsEl.textContent = this.segments.length;
+                    this.completedSegmentsEl.textContent = 0;
+                    this.failedSegmentsEl.textContent = 0;
+                } catch (error) {
+                    this.log(`解析失败: ${error.message}`, 'error');
+                } finally {
+                    this.parseBtn.disabled = false;
+                    this.parseBtn.textContent = '解析M3U8';
+                }
+            }
+
+            parseM3U8Content(content, baseUrl) {
+                const lines = content.split('\n');
+                const segments = [];
+
+                for (const line of lines) {
+                    if (line.trim() && !line.startsWith('#')) {
+                        // 处理相对路径和绝对路径
+                        let segmentUrl = line.trim();
+                        try {
+                            // 如果已经是完整URL，则不需要处理
+                            new URL(segmentUrl);
+                        } catch (e) {
+                            // 如果是相对路径，则基于baseUrl构建完整URL
+                            const urlObj = new URL(baseUrl);
+                            const basePath = urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+                            segmentUrl = new URL(basePath + segmentUrl, urlObj.origin).href;
+                        }
+                        segments.push(segmentUrl);
+                    }
+                }
+
+                return segments;
+            }
+
+            renderSegments() {
+                this.segmentGrid.innerHTML = '';
+
+                this.segments.forEach((segment, index) => {
+                    const segmentElement = document.createElement('div');
+                    segmentElement.className = 'segment pending';
+                    segmentElement.id = `segment-${index}`;
+                    segmentElement.innerHTML = `
+                        <div class="segment-index">${index + 1}</div>
+                        <div class="segment-status">待下载</div>
+                    `;
+
+                    // 点击重试失败的分片
+                    segmentElement.addEventListener('click', () => {
+                        if (segmentElement.classList.contains('failed')) {
+                            this.retrySegment(index);
+                        }
+                    });
+
+                    this.segmentGrid.appendChild(segmentElement);
+                });
+
+                this.segmentsContainer.classList.remove('hidden');
+            }
+
+            async startDownload() {
+                if (this.isDownloading) return;
+
+                this.isDownloading = true;
+                this.abortController = new AbortController();
+                this.startTime = Date.now();
+                this.completedCount = 0;
+                this.failedSegments = [];
+                this.downloadedSegments = new Array(this.segments.length).fill(null);
+                this.downloadComplete.classList.add('hidden');
+
+                this.progressContainer.classList.remove('hidden');
+                this.downloadBtn.disabled = true;
+                this.cancelBtn.classList.remove('hidden');
+                this.updateProgress();
+
+                this.log('开始下载分片...', 'info');
+
+                try {
+                    // 使用并发控制下载分片
+                    await this.downloadSegmentsWithConcurrency(3);
+                    this.log('所有分片下载完成', 'success');
+                    this.downloadComplete.classList.remove('hidden');
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        this.log('下载已取消', 'warning');
+                    } else {
+                        this.log(`下载过程中出现错误: ${error.message}`, 'error');
+                    }
+                } finally {
+                    this.isDownloading = false;
+                    this.downloadBtn.disabled = false;
+                    this.cancelBtn.classList.add('hidden');
+                }
+            }
+
+            async downloadSegmentsWithConcurrency(concurrency) {
+                const queue = [...this.segments.keys()];
+
+                const worker = async () => {
+                    while (queue.length > 0 && !this.abortController.signal.aborted) {
+                        const index = queue.shift();
+                        if (index !== undefined) {
+                            await this.downloadSegment(index);
+                        }
+                    }
+                };
+
+                const workers = [];
+                for (let i = 0; i < concurrency; i++) {
+                    workers.push(worker());
+                }
+
+                await Promise.all(workers);
+            }
+
+            async downloadSegment(index) {
+                if (this.abortController.signal.aborted) return;
+
+                this.updateSegmentUI(index, 'downloading');
+
+                try {
+                    const response = await fetch(this.segments[index], {
+                        signal: this.abortController.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.arrayBuffer();
+                    this.downloadedSegments[index] = data;
+                    this.completedCount++;
+                    this.updateSegmentUI(index, 'completed');
+                    this.updateProgress();
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        this.failedSegments.push(index);
+                        this.updateSegmentUI(index, 'failed');
+                        this.updateProgress();
+                        this.log(`分片 ${index + 1} 下载失败: ${error.message}`, 'error');
+                    }
+                }
+            }
+
+            async retrySegment(index) {
+                this.updateSegmentUI(index, 'retry');
+
+                try {
+                    const response = await fetch(this.segments[index]);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+
+                    const data = await response.arrayBuffer();
+                    this.downloadedSegments[index] = data;
+                    this.completedCount++;
+                    // 从失败列表中移除
+                    this.failedSegments = this.failedSegments.filter(i => i !== index);
+                    this.updateSegmentUI(index, 'completed');
+                    this.updateProgress();
+                    this.log(`分片 ${index + 1} 重试成功`, 'success');
+                } catch (error) {
+                    this.updateSegmentUI(index, 'failed');
+                    this.log(`分片 ${index + 1} 重试失败: ${error.message}`, 'error');
+                }
+            }
+
+            cancelDownload() {
+                if (this.abortController) {
+                    this.abortController.abort();
+                }
+            }
+
+            saveToFile() {
+                this.log('正在合并分片并准备下载...', 'info');
+
+                try {
+                    // 合并所有分片
+                    const blob = new Blob(this.downloadedSegments, { type: 'video/MP2T' });
+
+                    // 创建下载链接，使用.mp4扩展名
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'video.mp4';
+
+                    // 触发下载
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // 清理
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        this.log('文件已保存为 video.mp4', 'success');
+                    }, 100);
+                } catch (error) {
+                    this.log(`保存文件时出错: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 初始化下载器
+        document.addEventListener('DOMContentLoaded', () => {
+            new M3U8Downloader();
+        });
+    </script>
+</body>
+</html>

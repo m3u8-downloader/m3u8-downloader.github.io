@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <title>在线M3U8下载器</title>
     <style>
         * {
@@ -479,6 +480,13 @@
 
             async parseM3U8() {
                 this.m3u8Url = this.m3u8UrlInput.value.trim();
+
+                // 自动将HTTP转换为HTTPS
+                if (this.m3u8Url.startsWith('http://')) {
+                    this.m3u8Url = this.m3u8Url.replace('http://', 'https://');
+                    this.m3u8UrlInput.value = this.m3u8Url;
+                    this.log('已自动将HTTP转换为HTTPS', 'info');
+                }
 
                 if (!this.m3u8Url) {
                     alert('请输入M3U8文件的URL');
